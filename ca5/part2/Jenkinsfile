@@ -1,0 +1,75 @@
+ pipeline { 
+     agent any
+
+     stages { 
+         stage('Checkout') {
+             steps {
+                 echo 'Checking out...'
+                 git credentialsId: 'devops-repo-credentials', url: 'https://bitbucket.org/mendes-r/devops-20-21-1201779'
+             }
+         }       
+
+         stage('Assemble') {
+             steps {
+                 dir('ca2/part2/tut-basic-ca2/') {
+                     sh 'pwd'
+                     sh 'ls -1'
+                     echo 'Assembling...'
+                     sh './gradlew clean bootWar'
+                 }
+             }      
+         }
+        
+         stage('Test') {
+             steps {
+                 dir('ca2/part2/tut-basic-ca2/') {
+                     echo 'Testing...'
+                     sh './gradlew test'
+                     junit 'build/test-results/**/*.xml'
+                 }
+             }   
+         }
+         
+		stage('Javadoc') {
+			
+             steps {
+            	dir('ca2/part2/tut-basic-ca2/') {
+                 	echo 'Javadoc...'
+                 	sh './gradlew javadoc'
+    				publishHTML target: [
+    				            allowMissing: false,
+    				            alwaysLinkToLastBuild: false,
+    				            keepAll: true,
+    	    		            reportDir: 'build/docs/javadoc',
+    				            reportFiles: 'index.html',
+    				            reportName: 'Javadoc'
+    				]
+             	}
+         	}
+		}
+		
+		stage('Archiving') { 
+             steps {
+                 dir('ca2/part2/tut-basic-ca2/') {
+                     echo 'Archiving...'
+                     archiveArtifacts 'build/libs/*.war'
+                 }
+             }
+         } 
+         
+    	stage('Pushing image') {
+      		steps {
+		        dir ('ca2/part2/tut-basic-ca2/') {
+      		    	echo 'Pushing the image...'
+                	script {
+                	    def dockerImage = docker.build("isepmendes/devops2020:${env.BUILD_ID}")
+                    	docker.withRegistry( '' , 'dockerHubCredentials') {
+                            dockerImage.push()
+			            }
+                	}
+                	sh "docker rmi isepmendes/devops2020:${env.BUILD_ID}"
+		        }
+            }
+    	}
+    }
+ }

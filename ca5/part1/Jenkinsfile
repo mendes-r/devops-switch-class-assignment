@@ -1,0 +1,42 @@
+ pipeline { 
+     agent any
+
+     stages { 
+         stage('Checkout') {
+             steps {
+                 echo 'Checking out...'
+                 git credentialsId: 'devops-repo-credentials', url: 'https://bitbucket.org/mendes-r/devops-20-21-1201779'
+             }
+         }       
+
+         stage('Assemble') {
+             steps {
+                 dir('ca2/part1/gradle_basic_demo/') {
+                     sh 'pwd'
+                     sh 'ls -1'
+                     echo 'Assembling...'
+                     sh './gradlew clean war'
+                 }
+             }      
+         }
+        
+         stage('Test') {
+             steps {
+                 dir('ca2/part1/gradle_basic_demo/') {
+                     echo 'Testing...'
+                     sh './gradlew test'
+                     junit 'build/test-results/**/*.xml'
+                 }
+             }   
+         }
+
+         stage('Archiving') { 
+             steps {
+                 dir('ca2/part1/gradle_basic_demo/') {
+                     echo 'Archiving...'
+                     archiveArtifacts 'build/libs/*'
+                 }
+             }
+         } 
+     }
+ }

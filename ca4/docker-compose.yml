@@ -1,0 +1,29 @@
+version: '3'
+services:
+  web:
+    build:
+        context: ..
+        dockerfile: ca4/web/Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      default:
+        ipv4_address: 192.168.33.10
+    depends_on:
+      - "db"
+  db:
+    image: buildo/h2database
+    ports:
+      - "8082:8082"
+      - "9092:9092"
+    volumes:
+      - ./data:/usr/src/data
+    networks:
+      default:
+        ipv4_address: 192.168.33.11
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.33.0/24
